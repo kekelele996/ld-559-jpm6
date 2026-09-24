@@ -44,7 +44,14 @@ export enum Gender {
   FEMALE = 'FEMALE',
 }
 
-export const enumLabels = {
+export enum FollowUpStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
+export const enumLabels: Record<string, string> = {
   [PetSpecies.CAT]: '猫',
   [PetSpecies.DOG]: '狗',
   [PetSpecies.RABBIT]: '兔',
@@ -67,4 +74,14 @@ export const enumLabels = {
   [PolicyType.PREMIUM]: '高级',
   [Gender.MALE]: '雄性',
   [Gender.FEMALE]: '雌性',
+  [FollowUpStatus.CONFIRMED]: '已确认',
+  [FollowUpStatus.CANCELLED]: '已撤下',
+};
+
+/** 复诊状态与疫苗共用 PENDING / COMPLETED 字符串，标签需独立解析 */
+export const followUpStatusLabels: Record<string, string> = {
+  [FollowUpStatus.PENDING]: '待确认',
+  [FollowUpStatus.CONFIRMED]: '已确认',
+  [FollowUpStatus.COMPLETED]: '已完成',
+  [FollowUpStatus.CANCELLED]: '已撤下',
 };

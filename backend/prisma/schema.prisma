@@ -53,6 +53,13 @@ enum Gender {
   FEMALE
 }
 
+enum FollowUpStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
 model User {
   id             String          @id @default(cuid())
   email          String          @unique
@@ -93,12 +100,13 @@ model Pet {
   medicalRecords MedicalRecord[]
   vaccineRecords VaccineRecord[]
   policies       InsurancePolicy[]
+  followUpPlans  FollowUpPlan[]
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 }
 
 model MedicalRecord {
-  id            String    @id @default(cuid())
+  id            String        @id @default(cuid())
   petId         String
   vetId         String
   clinicId      String
@@ -110,11 +118,12 @@ model MedicalRecord {
   cost          Decimal
   nextVisitDate DateTime?
   attachments   String[]
-  pet           Pet       @relation(fields: [petId], references: [id])
-  vet           User      @relation("VetRecords", fields: [vetId], references: [id])
-  clinic        Clinic    @relation(fields: [clinicId], references: [id])
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  pet           Pet           @relation(fields: [petId], references: [id])
+  vet           User          @relation("VetRecords", fields: [vetId], references: [id])
+  clinic        Clinic        @relation(fields: [clinicId], references: [id])
+  followUpPlan  FollowUpPlan?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 }
 
 model VaccineRecord {
@@ -130,6 +139,23 @@ model VaccineRecord {
   vet              User          @relation("VaccineVet", fields: [vetId], references: [id])
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
+}
+
+model FollowUpPlan {
+  id               String         @id @default(cuid())
+  petId            String
+  medicalRecordId  String         @unique
+  scheduledDate    DateTime
+  status           FollowUpStatus @default(PENDING)
+  sevenDayReminded Boolean        @default(false)
+  dueDayReminded   Boolean        @default(false)
+  pet              Pet            @relation(fields: [petId], references: [id])
+  medicalRecord    MedicalRecord  @relation(fields: [medicalRecordId], references: [id])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([petId, status])
+  @@index([status, scheduledDate])
 }
 
 model InsurancePolicy {
@@ -148,14 +174,14 @@ model InsurancePolicy {
 }
 
 model Notification {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   userId    String
   title     String
   content   String
   type      String
-  read      Boolean   @default(false)
-  user      User      @relation(fields: [userId], references: [id])
-  createdAt DateTime  @default(now())
+  read      Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
 }
 
 model AuditLog {

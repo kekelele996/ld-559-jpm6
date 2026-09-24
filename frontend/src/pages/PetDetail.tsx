@@ -1,11 +1,25 @@
 import { Card, Descriptions, List, Space, Tabs, Timeline, Typography } from 'antd';
 import { useParams } from 'react-router-dom';
 import { usePetDetail, usePetInsurance, usePetMedical, usePetVaccines } from '../hooks/usePets';
+import { useFollowUps, useNextFollowUp } from '../hooks/useFollowUps';
 import { PetAvatar } from '../components/common/PetAvatar';
 import { VaccineCalendar } from '../components/common/VaccineCalendar';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { FollowUpNextCard } from '../components/followup/FollowUpNextCard';
+import { FollowUpList } from '../components/followup/FollowUpList';
 import { enumLabels } from '../constants/enums';
 import { formatCurrency, formatDate } from '../utils/format';
+
+function FollowUpTab({ petId }: { petId: string }) {
+  const { data: next = null } = useNextFollowUp(petId);
+  const { data: plans = [] } = useFollowUps(petId);
+  return (
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <FollowUpNextCard plan={next} />
+      <FollowUpList plans={plans} />
+    </Space>
+  );
+}
 
 export default function PetDetail() {
   const { id = '' } = useParams();
@@ -46,6 +60,7 @@ export default function PetDetail() {
             label: '就诊记录',
             children: <Timeline items={medical.map((record) => ({ children: `${formatDate(record.visitDate)} ${enumLabels[record.type]}：${record.diagnosis}` }))} />,
           },
+          { key: 'followups', label: '复诊安排', children: <FollowUpTab petId={id} /> },
           { key: 'vaccines', label: '疫苗日历', children: <VaccineCalendar records={vaccines} /> },
           {
             key: 'insurance',

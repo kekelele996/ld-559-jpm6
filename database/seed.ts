@@ -1,4 +1,4 @@
-import { PrismaClient, Gender, InsuranceStatus, PetSpecies, PolicyType, UserRole, VaccineStatus, VisitType } from '@prisma/client';
+import { PrismaClient, Gender, InsuranceStatus, PetSpecies, PolicyType, UserRole, VaccineStatus, VisitType, FollowUpStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -35,7 +35,7 @@ async function main() {
       medicalHistory: '幼年期肠胃敏感，需定期复查。',
     },
   });
-  await prisma.medicalRecord.create({
+  const checkup = await prisma.medicalRecord.create({
     data: {
       petId: pet.id,
       vetId: vet.id,
@@ -46,8 +46,16 @@ async function main() {
       treatment: '建议控制体重并增加运动',
       prescription: '益生菌 7 日',
       cost: 328,
-      nextVisitDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 90),
+      nextVisitDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
       attachments: [],
+    },
+  });
+  await prisma.followUpPlan.create({
+    data: {
+      petId: pet.id,
+      medicalRecordId: checkup.id,
+      scheduledDate: checkup.nextVisitDate as Date,
+      status: FollowUpStatus.PENDING,
     },
   });
   await prisma.vaccineRecord.create({

@@ -20,6 +20,9 @@ import { InsuranceRepository } from './modules/insurance/insurance.repository';
 import { NotificationController } from './modules/notifications/notification.controller';
 import { NotificationService } from './modules/notifications/notification.service';
 import { NotificationScheduler } from './modules/notifications/notification.scheduler';
+import { FollowUpController } from './modules/followups/followup.controller';
+import { FollowUpService } from './modules/followups/followup.service';
+import { FollowUpRepository } from './modules/followups/followup.repository';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -40,6 +43,7 @@ import { HealthController } from './health.controller';
     VaccineController,
     InsuranceController,
     NotificationController,
+    FollowUpController,
   ],
   providers: [
     PrismaService,
@@ -48,6 +52,8 @@ import { HealthController } from './health.controller';
     PetRepository,
     MedicalService,
     MedicalRepository,
+    FollowUpService,
+    FollowUpRepository,
     VaccineService,
     VaccineRepository,
     InsuranceService,

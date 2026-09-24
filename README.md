@@ -17,7 +17,15 @@ cd frontend && npm install && npm run dev
 - 后端 API：http://localhost:38506/api/v1
 - 健康检查：http://localhost:38506/api/v1/health
 
-PetCare+ 是面向宠物主人、兽医和管理员的一站式宠物健康管理平台，覆盖宠物档案、就诊记录、疫苗接种计划、保险保单和提醒通知。
+PetCare+ 是面向宠物主人、兽医和管理员的一站式宠物健康管理平台，覆盖宠物档案、就诊记录、**复诊跟踪**、疫苗接种计划、保险保单和提醒通知。
+
+## 复诊跟踪
+
+医生在就诊记录中填写/修改「下次复诊日期」后，系统会自动为该宠物生成或顺延一条待复诊计划（`FollowUpPlan`，与就诊记录一对一，同一份记录不会重复出现）；医生清空复诊日期时，未完成的待办同步撤下，已完成的保留为历史。主人在「宠物详情 → 复诊安排」中可以：
+
+- 查看下一次复诊日期、倒计时与下一次提醒节点（到期前 7 天、到期当天各一次）
+- 确认预约、把复诊改到**更晚**日期（改期后按新日期重新提醒）、标记完成
+- 已完成 / 已撤下的安排不再提醒
 
 ## 技术栈
 
@@ -37,7 +45,7 @@ PetCare+ 是面向宠物主人、兽医和管理员的一站式宠物健康管�
 |---|---|
 | `/login` | 演示账号登录 |
 | `/pets` | 宠物卡片、搜索、物种筛选 |
-| `/pets/:id` | 基本信息、就诊时间线、疫苗日历、保单列表 |
+| `/pets/:id` | 基本信息、就诊时间线、复诊安排、疫苗日历、保单列表 |
 | `/medical` | 就诊记录表格、处方侧栏、费用柱状图 |
 | `/vaccines` | 疫苗日历、待接种提醒、状态标记 |
 | `/insurance` | 保单卡片、理赔流程、保费/保障分析 |
@@ -47,7 +55,8 @@ PetCare+ 是面向宠物主人、兽医和管理员的一站式宠物健康管�
 | 实体 | 后端链路 | 前端链路 |
 |---|---|---|
 | Pet | `prisma/schema.prisma` → `prisma.service.ts` → `pet.repository.ts` → `pet.service.ts` → `pet.controller.ts` → `pet.routes.ts` | `petApi.ts` → `usePets.ts` → `PetList.tsx` / `PetDetail.tsx` / `PetAvatar.tsx` |
-| MedicalRecord | Prisma → `medical.repository.ts` → `medical.service.ts` → `medical.controller.ts` → `medical.routes.ts` | `medicalApi.ts` → `usePets.ts` → `MedicalManagement.tsx` / `CostBarChart.tsx` |
+| MedicalRecord | Prisma → `medical.repository.ts` → `medical.service.ts`（同步复诊计划）→ `medical.controller.ts` → `medical.routes.ts` | `medicalApi.ts` → `usePets.ts` → `MedicalManagement.tsx` / `CostBarChart.tsx` |
+| FollowUpPlan | Prisma → `followup.repository.ts` → `followup.service.ts` → `followup.controller.ts` → `followup.routes.ts` | `followUpApi.ts` → `useFollowUps.ts` → `FollowUpNextCard.tsx` / `FollowUpList.tsx`（`PetDetail.tsx`） |
 | VaccineRecord | Prisma → `vaccine.repository.ts` → `vaccine.service.ts` → `vaccine.controller.ts` → `vaccine.routes.ts` | `vaccineApi.ts` → `usePets.ts` → `VaccineManagement.tsx` / `VaccineCalendar.tsx` |
 | InsurancePolicy | Prisma → `insurance.repository.ts` → `insurance.service.ts` → `insurance.controller.ts` → `insurance.routes.ts` | `insuranceApi.ts` → `usePets.ts` → `InsuranceCenter.tsx` / `InsurancePieChart.tsx` |
 
@@ -62,6 +71,7 @@ PetCare+ 是面向宠物主人、兽医和管理员的一站式宠物健康管�
 | InsuranceStatus | `backend/src/constants/enums.ts`、`insurance.dto.ts`、`notification.scheduler.ts`、`schema.prisma` | `frontend/src/constants/enums.ts`、`insurance.d.ts`、`InsuranceCenter.tsx`、`InsurancePieChart.tsx`、`StatusBadge.tsx` |
 | PolicyType | `backend/src/constants/enums.ts`、`insurance.dto.ts`、`schema.prisma` | `frontend/src/constants/enums.ts`、`insurance.d.ts`、`InsuranceCenter.tsx`、`mockData.ts` |
 | Gender | `backend/src/constants/enums.ts`、`pet.dto.ts`、`schema.prisma` | `frontend/src/constants/enums.ts`、`pet.d.ts`、`PetDetail.tsx`、`mockData.ts` |
+| FollowUpStatus | `backend/src/constants/enums.ts`、`followup.service.ts`、`followup.repository.ts`、`followup.validator.ts`、`notification.service.ts`、`schema.prisma` | `frontend/src/constants/enums.ts`、`followup.d.ts`、`FollowUpNextCard.tsx`、`FollowUpList.tsx`、`StatusBadge.tsx`、`mockData.ts` |
 
 ## RBAC
 
@@ -81,7 +91,11 @@ PetCare+ 是面向宠物主人、兽医和管理员的一站式宠物健康管�
 
 ## 提醒通知
 
-`backend/src/modules/notifications/notification.scheduler.ts` 使用 Nest Schedule 扫描疫苗到期、保险续保和复诊提醒。前端 `NotificationBell.tsx` 拉取未读通知。
+`backend/src/modules/notifications/notification.scheduler.ts` 每天 8:00 扫描疫苗到期、保险续保和复诊提醒，前端 `NotificationBell.tsx` 拉取未读通知。复诊提醒规则：
+
+- 计划复诊日前 **7 天**提醒一次、到期**当天**提醒一次，通过 `FollowUpPlan.sevenDayReminded` / `dueDayReminded` 标记位去重，每天扫描也不会重复发送
+- 仅 `PENDING` / `CONFIRMED` 状态参与扫描，`COMPLETED`（已完成）、`CANCELLED`（已撤下）不再提醒
+- 医生修改复诊日期或主人改期后，提醒标记重置，按新日期重新计算
 
 ## 目录结构
 
@@ -89,6 +103,7 @@ PetCare+ 是面向宠物主人、兽医和管理员的一站式宠物健康管�
 frontend/
 ├── src/api/
 ├── src/components/common/
+├── src/components/followups/
 ├── src/components/charts/
 ├── src/constants/
 ├── src/hooks/
@@ -103,6 +118,7 @@ frontend/
 backend/
 ├── src/modules/pets/
 ├── src/modules/medical/
+├── src/modules/followups/
 ├── src/modules/vaccines/
 ├── src/modules/insurance/
 ├── src/modules/auth/
