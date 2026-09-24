@@ -1,4 +1,5 @@
-import { Gender, InsuranceStatus, PetSpecies, PolicyType, VaccineStatus, VisitType } from '../constants/enums';
+import { FollowUpStatus, Gender, InsuranceStatus, PetSpecies, PolicyType, VaccineStatus, VisitType } from '../constants/enums';
+import type { FollowUpPlan } from '../types/followup';
 import type { InsurancePolicy } from '../types/insurance';
 import type { MedicalRecord } from '../types/medical';
 import type { Pet } from '../types/pet';
@@ -43,7 +44,7 @@ export const mockMedical: MedicalRecord[] = [
     treatment: '建议控制体重并增加运动',
     prescription: '益生菌 7 日',
     cost: 328,
-    nextVisitDate: '2026-09-10',
+    nextVisitDate: '2026-09-28',
     attachments: [],
     pet: mockPets[0],
   },
@@ -60,6 +61,17 @@ export const mockMedical: MedicalRecord[] = [
     cost: 186,
     attachments: [],
     pet: mockPets[1],
+  },
+];
+
+export const mockFollowUps: FollowUpPlan[] = [
+  {
+    id: 'followup-demo-1',
+    petId: 'pet-demo-1',
+    medicalRecordId: 'medical-demo-1',
+    dueDate: '2026-09-28',
+    status: FollowUpStatus.PENDING,
+    pet: mockPets[0],
   },
 ];
 

@@ -4,6 +4,7 @@ import { usePetDetail, usePetInsurance, usePetMedical, usePetVaccines } from '..
 import { PetAvatar } from '../components/common/PetAvatar';
 import { VaccineCalendar } from '../components/common/VaccineCalendar';
 import { StatusBadge } from '../components/common/StatusBadge';
+import { FollowUpPanel } from '../components/common/FollowUpPanel';
 import { enumLabels } from '../constants/enums';
 import { formatCurrency, formatDate } from '../utils/format';
 
@@ -46,6 +47,7 @@ export default function PetDetail() {
             label: '就诊记录',
             children: <Timeline items={medical.map((record) => ({ children: `${formatDate(record.visitDate)} ${enumLabels[record.type]}：${record.diagnosis}` }))} />,
           },
+          { key: 'followup', label: '复诊计划', children: <FollowUpPanel petId={id} /> },
           { key: 'vaccines', label: '疫苗日历', children: <VaccineCalendar records={vaccines} /> },
           {
             key: 'insurance',

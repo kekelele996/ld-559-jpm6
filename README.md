@@ -37,7 +37,7 @@ PetCare+ 是面向宠物主人、兽医和管理员的一站式宠物健康管�
 |---|---|
 | `/login` | 演示账号登录 |
 | `/pets` | 宠物卡片、搜索、物种筛选 |
-| `/pets/:id` | 基本信息、就诊时间线、疫苗日历、保单列表 |
+| `/pets/:id` | 基本信息、就诊时间线、复诊计划、疫苗日历、保单列表 |
 | `/medical` | 就诊记录表格、处方侧栏、费用柱状图 |
 | `/vaccines` | 疫苗日历、待接种提醒、状态标记 |
 | `/insurance` | 保单卡片、理赔流程、保费/保障分析 |
@@ -48,6 +48,7 @@ PetCare+ 是面向宠物主人、兽医和管理员的一站式宠物健康管�
 |---|---|---|
 | Pet | `prisma/schema.prisma` → `prisma.service.ts` → `pet.repository.ts` → `pet.service.ts` → `pet.controller.ts` → `pet.routes.ts` | `petApi.ts` → `usePets.ts` → `PetList.tsx` / `PetDetail.tsx` / `PetAvatar.tsx` |
 | MedicalRecord | Prisma → `medical.repository.ts` → `medical.service.ts` → `medical.controller.ts` → `medical.routes.ts` | `medicalApi.ts` → `usePets.ts` → `MedicalManagement.tsx` / `CostBarChart.tsx` |
+| FollowUpPlan | Prisma → `followup.repository.ts` → `followup.service.ts` → `followup.controller.ts` → `followup.routes.ts` | `followupApi.ts` → `usePets.ts` → `FollowUpPanel.tsx` / `PetDetail.tsx` |
 | VaccineRecord | Prisma → `vaccine.repository.ts` → `vaccine.service.ts` → `vaccine.controller.ts` → `vaccine.routes.ts` | `vaccineApi.ts` → `usePets.ts` → `VaccineManagement.tsx` / `VaccineCalendar.tsx` |
 | InsurancePolicy | Prisma → `insurance.repository.ts` → `insurance.service.ts` → `insurance.controller.ts` → `insurance.routes.ts` | `insuranceApi.ts` → `usePets.ts` → `InsuranceCenter.tsx` / `InsurancePieChart.tsx` |
 
@@ -62,6 +63,7 @@ PetCare+ 是面向宠物主人、兽医和管理员的一站式宠物健康管�
 | InsuranceStatus | `backend/src/constants/enums.ts`、`insurance.dto.ts`、`notification.scheduler.ts`、`schema.prisma` | `frontend/src/constants/enums.ts`、`insurance.d.ts`、`InsuranceCenter.tsx`、`InsurancePieChart.tsx`、`StatusBadge.tsx` |
 | PolicyType | `backend/src/constants/enums.ts`、`insurance.dto.ts`、`schema.prisma` | `frontend/src/constants/enums.ts`、`insurance.d.ts`、`InsuranceCenter.tsx`、`mockData.ts` |
 | Gender | `backend/src/constants/enums.ts`、`pet.dto.ts`、`schema.prisma` | `frontend/src/constants/enums.ts`、`pet.d.ts`、`PetDetail.tsx`、`mockData.ts` |
+| FollowUpStatus | `backend/src/constants/enums.ts`、`followup.validator.ts`、`followup.service.ts`、`notification.service.ts`、`schema.prisma` | `frontend/src/constants/enums.ts`、`followup.d.ts`、`FollowUpPanel.tsx`、`StatusBadge.tsx`、`mockData.ts` |
 
 ## RBAC
 
@@ -83,6 +85,10 @@ PetCare+ 是面向宠物主人、兽医和管理员的一站式宠物健康管�
 
 `backend/src/modules/notifications/notification.scheduler.ts` 使用 Nest Schedule 扫描疫苗到期、保险续保和复诊提醒。前端 `NotificationBell.tsx` 拉取未读通知。
 
+## 复诊计划
+
+医生在就诊记录上填写或修改 `nextVisitDate` 时，`medical.service.ts` 会调用 `followup.service.ts` 的 `syncFromMedicalRecord`：为该记录生成唯一的待复诊计划（`medicalRecordId` 唯一约束，同一记录不重复生成），日期变化时顺延并重置提醒；医生清空复诊日期时，进行中的计划同步撤下（状态置为 `CANCELLED`）。主人在宠物详情页的"复诊计划"标签中可以确认预约、改到更晚日期或标记完成，每条计划展示下一次提醒时间。定时任务对 `PENDING` / `CONFIRMED` 的计划在到期前 7 天和到期当天各提醒一次（通过 `remindedAt7d` / `remindedAtDue` 去重），`COMPLETED` / `CANCELLED` 的计划不再提醒。
+
 ## 目录结构
 
 ```text
@@ -103,6 +109,7 @@ frontend/
 backend/
 ├── src/modules/pets/
 ├── src/modules/medical/
+├── src/modules/followups/
 ├── src/modules/vaccines/
 ├── src/modules/insurance/
 ├── src/modules/auth/

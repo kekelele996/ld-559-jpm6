@@ -44,6 +44,13 @@ export enum Gender {
   FEMALE = 'FEMALE',
 }
 
+export enum FollowUpStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
 export const enumLabels = {
   [PetSpecies.CAT]: '猫',
   [PetSpecies.DOG]: '狗',
@@ -67,4 +74,11 @@ export const enumLabels = {
   [PolicyType.PREMIUM]: '高级',
   [Gender.MALE]: '雄性',
   [Gender.FEMALE]: '雌性',
+};
+
+export const followUpStatusLabels = {
+  [FollowUpStatus.PENDING]: '待确认',
+  [FollowUpStatus.CONFIRMED]: '已确认',
+  [FollowUpStatus.COMPLETED]: '已完成',
+  [FollowUpStatus.CANCELLED]: '已撤下',
 };

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { addDays } from '../../utils/date';
+import { FollowUpStatus } from '../../constants/enums';
+import { addDays, startOfDay } from '../../utils/date';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -48,6 +49,38 @@ export class NotificationService {
           type: 'INSURANCE',
         },
       }).catch(() => undefined);
+    }
+
+    // 复诊提醒：临近七天和到期当天各提醒一次，已完成/已撤下的安排不再提醒
+    const followUps = await this.prisma.followUpPlan.findMany({
+      where: { status: { in: [FollowUpStatus.PENDING, FollowUpStatus.CONFIRMED] } },
+      include: { pet: true },
+    });
+    const today = startOfDay(now);
+    for (const plan of followUps) {
+      const dueDay = startOfDay(plan.dueDate);
+      const dueText = dueDay.toISOString().slice(0, 10);
+      if (!plan.remindedAtDue && today.getTime() >= dueDay.getTime()) {
+        await this.prisma.notification.create({
+          data: {
+            userId: plan.pet.ownerId,
+            title: '复诊到期提醒',
+            content: `${plan.pet.name} 的复诊日期是今天（${dueText}），请按时就诊`,
+            type: 'FOLLOW_UP',
+          },
+        }).catch(() => undefined);
+        await this.prisma.followUpPlan.update({ where: { id: plan.id }, data: { remindedAtDue: now } });
+      } else if (!plan.remindedAt7d && now.getTime() >= addDays(plan.dueDate, -7).getTime()) {
+        await this.prisma.notification.create({
+          data: {
+            userId: plan.pet.ownerId,
+            title: '复诊临近提醒',
+            content: `${plan.pet.name} 的复诊日期临近（${dueText}），请提前安排时间`,
+            type: 'FOLLOW_UP',
+          },
+        }).catch(() => undefined);
+        await this.prisma.followUpPlan.update({ where: { id: plan.id }, data: { remindedAt7d: now } });
+      }
     }
   }
 }
